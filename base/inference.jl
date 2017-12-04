@@ -1911,7 +1911,20 @@ end
 
 function method_for_inference_heuristics(infstate::InferenceState)
     m = infstate.src.method_for_inference_heuristics
-    return m === nothing ? infstate.linfo.def : m
+    return isa(m, Method) ? m : infstate.linfo.def
+end
+
+function method_for_inference_heuristics(method::Method, @nospecialize(sig), sparams, world)
+    if isdefined(method, :generator) && method.generator.expand_early
+        method_instance = code_for_method(method, sig, sparams, world, false)
+        if isa(method_instance, MethodInstance)
+            cinfo = get_staged(method_instance)
+            if isa(cinfo, CodeInfo) && isa(cinfo.method_for_inference_heuristics, Method)
+                return cinfo.method_for_inference_heuristics
+            end
+        end
+    end
+    return method
 end
 
 function abstract_call_method(method::Method, @nospecialize(f), @nospecialize(sig), sparams::SimpleVector, sv::InferenceState)
@@ -1922,17 +1935,7 @@ function abstract_call_method(method::Method, @nospecialize(f), @nospecialize(si
     # Returns the topmost occurrence of that repeated edge.
     cyclei = 0
     infstate = sv
-    if isdefined(method, :generator) # && method.generator.expand_early
-        method_instance = code_for_method(method, sig, sparams, sv.params.world, false)
-        if isa(method_instance, MethodInstance)
-            cinfo = get_staged(method_instance)
-            if isa(cinfo, CodeInfo) && isa(cinfo.method_for_inference_heuristics, Method)
-                checked_method = cinfo.method_for_inference_heuristics
-            end
-        end
-    else
-        checked_method = method
-    end
+    checked_method = method_for_inference_heuristics(method, sig, sparams, sv.params.world)
     while !(infstate === nothing)
         infstate = infstate::InferenceState
         if method === infstate.linfo.def && infstate.linfo.specTypes == sig
