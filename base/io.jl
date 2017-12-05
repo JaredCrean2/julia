@@ -65,6 +65,27 @@ function readavailable end
     isreadable(io) -> Bool
 
 Return `true` if the specified IO object is readable (if that can be determined).
+
+# Examples
+```jldoctest
+julia> io = open("myfile.txt", "w");
+
+julia> isreadable(io)
+false
+
+julia> write(io, "Hello world!");
+
+julia> close(io);
+
+julia> io = open("myfile.txt", "r");
+
+julia> isreadable(io)
+true
+
+julia> close(io)
+
+julia> rm("myfile.txt")
+```
 """
 function isreadable end
 
@@ -72,6 +93,27 @@ function isreadable end
     iswritable(io) -> Bool
 
 Return `true` if the specified IO object is writable (if that can be determined).
+
+# Examples
+```jldoctest
+julia> io = open("myfile.txt", "w");
+
+julia> iswritable(io)
+true
+
+julia> write(io, "Hello world!");
+
+julia> close(io);
+
+julia> io = open("myfile.txt", "r");
+
+julia> iswritable(io)
+false
+
+julia> close(io)
+
+julia> rm("myfile.txt")
+```
 """
 function iswritable end
 function copy end
